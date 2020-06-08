@@ -1,17 +1,19 @@
 import os
 import pickle
+import json
+from json.decoder import JSONDecodeError
 from google.auth.transport.requests import Request
 from google.oauth2.service_account import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
 
-def get_credentials(auth_mode, client_secrets_file, oauth2_scopes, delegated_email_address=None, local_server_port=None, token_file="token.pickle"):
+def get_credentials(auth_mode, client_secrets, oauth2_scopes, delegated_email_address=None, local_server_port=None, token_file="token.pickle"):
     """
     A method to get a valid credentials to interact with Google API
 
     Args:
         auth_mode (str): Mode of authentication & authorization. Valid values are only 'server_side' and 'service_account'.
-        client_secrets_file (str): The path to the credentials json file.
+        client_secrets (str): The path to the credentials json file or credentials information in json format (only for auth_mode=service_account).
         oauth2_scopes (list of str): Scopes to request during the authorization grant.
         delegated_email_address (str): Must be set if using 'service_account' as auth_mode. For domain-wide delegation, the email address of the user to for which to request delegated access.
         local_server_port (int): Must be set if using 'server_side' as auth_mode. The port for the local redirect server.
@@ -34,7 +36,7 @@ def get_credentials(auth_mode, client_secrets_file, oauth2_scopes, delegated_ema
             )
         else:
             credentials = server_side_web_apps_auth(
-                client_secrets_file=client_secrets_file,
+                client_secrets_file=client_secrets,
                 oauth2_scopes=oauth2_scopes,
                 local_server_port=local_server_port,
                 token_file=token_file
@@ -48,7 +50,7 @@ def get_credentials(auth_mode, client_secrets_file, oauth2_scopes, delegated_ema
             )
         else:
             credentials = service_account_auth(
-                client_secrets_file=client_secrets_file,
+                client_secrets=client_secrets,
                 oauth2_scopes=oauth2_scopes,
                 delegated_email_address=delegated_email_address
             )
@@ -63,12 +65,12 @@ def get_credentials(auth_mode, client_secrets_file, oauth2_scopes, delegated_ema
     return credentials
 
 
-def service_account_auth(client_secrets_file, oauth2_scopes, delegated_email_address):
+def service_account_auth(client_secrets, oauth2_scopes, delegated_email_address):
     """
     Creates a Credentials instance from a service account json file.
 
     Args:
-        client_secrets_file (str): The path to the service account json file.
+        client_secrets (str): The path to the credentials json file or credentials information in json format.
         oauth2_scopes (list of str): Scopes to request during the authorization grant.
         delegated_email_address (str): For domain-wide delegation, the email address of the user to for which to request delegated access.
 
@@ -76,12 +78,24 @@ def service_account_auth(client_secrets_file, oauth2_scopes, delegated_email_add
         google.auth.service_account.Credentials: Service account credentials
     """
 
-    # https://google-auth.readthedocs.io/en/latest/reference/google.oauth2.service_account.html
-    return Credentials.from_service_account_file(
-        client_secrets_file,
-        scopes=oauth2_scopes,
-        subject=delegated_email_address
-    )
+    try:
+        data = json.loads(client_secrets)
+
+        # https://google-auth.readthedocs.io/en/latest/reference/google.oauth2.service_account.html
+        return Credentials.from_service_account_info(
+            data,
+            scopes=oauth2_scopes,
+            subject=delegated_email_address
+        )
+    except JSONDecodeError:
+        data = client_secrets
+
+        # https://google-auth.readthedocs.io/en/latest/reference/google.oauth2.service_account.html
+        return Credentials.from_service_account_file(
+            client_secrets,
+            scopes=oauth2_scopes,
+            subject=delegated_email_address
+        )
 
 
 def server_side_web_apps_auth(client_secrets_file, oauth2_scopes, local_server_port, token_file):

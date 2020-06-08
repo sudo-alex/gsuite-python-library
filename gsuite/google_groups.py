@@ -8,12 +8,12 @@ class GoogleGroups:
 
     Args:
         auth_mode (str): Mode of authentication & authorization. Valid values are only 'server_side' and 'service_account'.
-        client_secrets_file (str): The path to the credentials json file.
+        client_secrets (str): The path to the credentials json file or credentials information in json format (only for auth_mode=service_account).
         delegated_email_address (str): Must be set if using 'service_account' as auth_mode. For domain-wide delegation, the email address of the user to for which to request delegated access.
         local_server_port (int): Must be set if using 'server_side' as auth_mode. The port for the local redirect server.
     """
 
-    def __init__(self, auth_mode, client_secrets_file, delegated_email_address=None, local_server_port=None):
+    def __init__(self, auth_mode, client_secrets, delegated_email_address=None, local_server_port=None):
         # If modifying these scopes, delete the file token.pickle.
         #
         # Read more about oauth2 scopes:
@@ -26,7 +26,7 @@ class GoogleGroups:
 
         credentials = get_credentials(
             auth_mode=auth_mode,
-            client_secrets_file=client_secrets_file,
+            client_secrets=client_secrets,
             oauth2_scopes=oauth2_scopes,
             delegated_email_address=delegated_email_address,
             local_server_port=local_server_port
