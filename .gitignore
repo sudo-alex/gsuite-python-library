@@ -133,3 +133,6 @@ cred*
 
 # Debug file
 debug*
+
+VSCode
+.vscode/
